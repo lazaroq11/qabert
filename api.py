@@ -1,11 +1,11 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from transformers import pipeline
 
 app = Flask(__name__)
-app.config['CORS_HEADERS'] = ['Content-Type', 'Access-Control-Allow-Origin']
-# Inicialize o contexto para o modelo de Perguntas e Respostas
-qa_context = ""
+CORS(app)
 
+qa_context = ""
 qa_model = pipeline('question-answering', model='distilbert-base-cased-distilled-squad', tokenizer='distilbert-base-cased-distilled-squad')
 
 @app.route('/set_context', methods=['POST'])
@@ -23,14 +23,16 @@ def chat():
     model_type = data.get('model_type', 'gpt')  # Padrão para geração de texto
 
     if model_type == 'qa':
-        context = qa_context
-        answer = qa_model({'question': user_input, 'context': context})
-        response = answer['answer']
+        try:
+            context = qa_context
+            answer = qa_model({'question': user_input, 'context': context})
+            response = answer['answer']
+        except Exception as e:
+            response = f"Erro ao processar a pergunta: {str(e)}"
     else:
-        # Adicione a lógica para outros modelos, se necessário
         response = "Modelo não suportado"
 
     return jsonify({'response': response})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False)
